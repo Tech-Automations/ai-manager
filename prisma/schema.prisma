@@ -1,3 +1,8 @@
+/**
+ * ERD for AI Manager:
+ * https://dbdiagram.io/d/AI-Manager-68b12a6f777b52b76c1af257
+ */
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,32 +12,181 @@ datasource db {
   url      = "file:/Users/rees/Desktop/Data/One Digital Stack/Databases/AIManager.db"
 }
 
-model User {
-  id        Int       @id @default(autoincrement())
-  name      String
-  email     String    @unique
-  projects  Project[]
-  tasks     Task[]
-  createdAt DateTime  @default(now())
+// --- Company + Teams ---
+model Company {
+  id               Int       @id @default(autoincrement())
+  name             String
+  domain           String?   @unique
+  subscriptionPlan String
+  users            User[]
+  teams            Team[]
+  projects         Project[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }
 
+model Team {
+  id          Int       @id @default(autoincrement())
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   Int
+  name        String
+  description String?
+  members     User[]    @relation("UserTeams")
+  projects    Project[] @relation("TeamProjects")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// --- Users ---
+model User {
+  id           Int     @id @default(autoincrement())
+  company      Company @relation(fields: [companyId], references: [id])
+  companyId    Int
+  name         String
+  email        String  @unique
+  role         String
+  authProvider String?
+
+  teams         Team[]    @relation("UserTeams")
+  projects      Project[] @relation("UserProjects")
+  ownedProjects Project[] @relation("ProjectOwner")
+
+  assignedTasks Task[]        @relation("TaskAssignee")
+  comments      TaskComment[]
+  uploads       Attachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// --- Agile ---
 model Project {
-  id        Int       @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
+  company     Company   @relation(fields: [companyId], references: [id])
+  companyId   Int
+  name        String
+  description String?
+  status      String
+  startDate   DateTime?
+  endDate     DateTime?
+
+  owner   User @relation("ProjectOwner", fields: [ownerId], references: [id])
+  ownerId Int
+
+  members User[] @relation("UserProjects")
+  teams   Team[] @relation("TeamProjects")
+
+  epics   Epic[]
+  sprints Sprint[]
+  boards  Board[]
+  tasks   Task[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Epic {
+  id          Int      @id @default(autoincrement())
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   Int
+  name        String
+  description String?
+  status      String   @default("open")
+  tasks       Task[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Sprint {
+  id        Int      @id @default(autoincrement())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId Int
   name      String
-  owner     User      @relation(fields: [ownerId], references: [id])
-  ownerId   Int
+  goal      String?
+  startDate DateTime
+  endDate   DateTime
   tasks     Task[]
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Board {
+  id        Int      @id @default(autoincrement())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId Int
+  name      String
+  type      String // e.g. Kanban, Scrum
+  tasks     Task[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Task {
-  id          Int       @id @default(autoincrement())
+  id        Int     @id @default(autoincrement())
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId Int
+  epic      Epic?   @relation(fields: [epicId], references: [id])
+  epicId    Int?
+  sprint    Sprint? @relation(fields: [sprintId], references: [id])
+  sprintId  Int?
+  board     Board?  @relation(fields: [boardId], references: [id])
+  boardId   Int?
+
   title       String
   description String?
-  status      String    @default("pending")
-  project     Project   @relation(fields: [projectId], references: [id])
-  projectId   Int
-  assignedTo  User?     @relation(fields: [assignedToId], references: [id])
+  status      String  @default("todo") // todo, in-progress, done
+  priority    String  @default("medium")
+
+  assignedTo   User? @relation("TaskAssignee", fields: [assignedToId], references: [id])
   assignedToId Int?
-  createdAt   DateTime  @default(now())
+
+  subtasks    Subtask[]
+  comments    TaskComment[]
+  attachments Attachment[]
+
+  linksFrom TaskLink[] @relation("TaskLinksFrom")
+  linksTo   TaskLink[] @relation("TaskLinksTo")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subtask {
+  id        Int      @id @default(autoincrement())
+  task      Task     @relation(fields: [taskId], references: [id])
+  taskId    Int
+  title     String
+  status    String   @default("todo")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskComment {
+  id        Int      @id @default(autoincrement())
+  task      Task     @relation(fields: [taskId], references: [id])
+  taskId    Int
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  Int
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Attachment {
+  id           Int      @id @default(autoincrement())
+  task         Task     @relation(fields: [taskId], references: [id])
+  taskId       Int
+  fileUrl      String
+  fileType     String?
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedById Int
+  createdAt    DateTime @default(now())
+}
+
+model TaskLink {
+  id         Int    @id @default(autoincrement())
+  fromTask   Task   @relation("TaskLinksFrom", fields: [fromTaskId], references: [id])
+  fromTaskId Int
+  toTask     Task   @relation("TaskLinksTo", fields: [toTaskId], references: [id])
+  toTaskId   Int
+  linkType   String // e.g. blocks, duplicates, relates-to
 }
