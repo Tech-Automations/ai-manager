@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/app/components/layout/Sidebar";
 import Topbar from "@/app/components/layout/TopBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import {
@@ -13,10 +12,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/app/components/ui/dialog";
+import { DataTable } from "@/app/components/ui/data-table";
+import { columns, Project } from "./columns";
 import AddProjectForm from "./add-project/page";
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<any[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +42,6 @@ export default function ProjectsPage() {
         <Topbar />
 
         <main className="p-6 space-y-6">
-          {/* 🔹 Page Header with Add Project Button */}
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Projects</h1>
 
@@ -57,44 +57,18 @@ export default function ProjectsPage() {
                 <DialogHeader>
                   <DialogTitle>Create a New Project</DialogTitle>
                 </DialogHeader>
-
-                {
-                  <AddProjectForm />
-                }
-                
+                <AddProjectForm />
               </DialogContent>
             </Dialog>
           </div>
 
-          {/* 🔹 Projects List */}
           {loading ? (
             <div className="flex items-center space-x-2 text-gray-600">
               <Loader2 className="animate-spin h-5 w-5" />
               <span>Loading projects...</span>
             </div>
-          ) : projects.length === 0 ? (
-            <p className="text-gray-500">No projects found. Create one!</p>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {projects.map((project) => (
-                <Card key={project.id} className="shadow-sm hover:shadow-md transition">
-                  <CardHeader>
-                    <CardTitle>{project.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-600">
-                      {project.description || "No description"}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Status: {project.status}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      Owner: {project.owner?.name || "N/A"}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <DataTable columns={columns} data={projects} />
           )}
         </main>
       </div>
