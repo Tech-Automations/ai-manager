@@ -5,11 +5,8 @@ import Link from "next/link";
 
 const menu = [
   { name: "Dashboard", icon: Home, href: "/dashboard" },
-  { name: "Analytics", icon: BarChart2, href: "/dashboard/analytics" },
-  { name: "Projects", icon: Layers, href: "/dashboard/projects" },
-  { name: "Calendar", icon: Calendar, href: "/dashboard/calendar" },
-  { name: "Users", icon: Users, href: "/dashboard/users" },
-  { name: "Settings", icon: Settings, href: "/dashboard/settings" },
+  { name: "Projects", icon: Layers, href: "/project" },
+  { name: "Users", icon: Users, href: "/dashboard/users" }
 ];
 
 export default function Sidebar() {
